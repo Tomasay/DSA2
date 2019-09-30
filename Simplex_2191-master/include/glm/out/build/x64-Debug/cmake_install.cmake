@@ -2,7 +2,7 @@
 
 # Set the install prefix
 if(NOT DEFINED CMAKE_INSTALL_PREFIX)
-  set(CMAKE_INSTALL_PREFIX "D:/Profiles/twr2404/Source/Repos/DSA2/Simplex_2191-master/include/glm/out/install/x64-Debug")
+  set(CMAKE_INSTALL_PREFIX "d:/profiles/twr2404/source/repos/dsa2/simplex_2191-master/include/glm/out/install/x64-Debug")
 endif()
 string(REGEX REPLACE "/$" "" CMAKE_INSTALL_PREFIX "${CMAKE_INSTALL_PREFIX}")
 
