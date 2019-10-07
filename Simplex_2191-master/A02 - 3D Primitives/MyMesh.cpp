@@ -439,9 +439,25 @@ void MyMesh::GenerateTorus(float a_fOuterRadius, float a_fInnerRadius, int a_nSu
 	Release();
 	Init();
 
-	// Replace this with your code
-	GenerateCube(a_fOuterRadius * 2.0f, a_v3Color);
-	// -------------------------------
+	//Calculate the amount of radians between each point
+	float radiansA = (2 * PI) / a_nSubdivisionsA;
+	float radiansB = (2 * PI) / a_nSubdivisionsB;
+	float phi = 2 * PI / a_nSubdivisionsB;
+
+	//Create each tri and calculate the corresponding X and Y
+	for (int i = 0; i < a_nSubdivisionsA; i++)
+	{
+		//Shell
+		for (int j = 1; j < a_nSubdivisionsB - 1; j++)
+		{
+			AddQuad(
+				glm::vec3(cos(radiansA * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * j), sin(radiansB * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * j), a_fInnerRadius * sin(phi * j)),
+				glm::vec3(cos(radiansA * (i + 1)) * (a_fOuterRadius + a_fInnerRadius * cos(phi * j), sin(radiansB * (i + 1)) * (a_fOuterRadius + a_fInnerRadius * cos(phi * j), a_fInnerRadius * sin(phi * j)),
+				glm::vec3(cos(radiansA * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * (j + 1)), sin(radiansB * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * (j + 1)), a_fInnerRadius * sin(phi * (j + 1))),
+				glm::vec3(cos(radiansA * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * (j + 1)), sin(radiansB * i) * (a_fOuterRadius + a_fInnerRadius * cos(phi * (j + 1)), a_fInnerRadius * sin(phi * (j + 1)))
+				);
+		}
+	}
 
 	// Adding information about color
 	CompleteMesh(a_v3Color);
