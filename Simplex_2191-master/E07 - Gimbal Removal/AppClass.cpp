@@ -28,10 +28,23 @@ void Application::Display(void)
 	m_m4Model = glm::rotate(IDENTITY_M4, glm::radians(m_v3Rotation.x), vector3(1.0f, 0.0f, 0.0f));
 	m_m4Model = glm::rotate(m_m4Model, glm::radians(m_v3Rotation.y), vector3(0.0f, 1.0f, 0.0f));
 	m_m4Model = glm::rotate(m_m4Model, glm::radians(m_v3Rotation.z), vector3(0.0f, 0.0f, 1.0f));
-	m_pMesh->Render(m4Projection, m4View, ToMatrix4(m_m4Model));
+	//m_pMesh->Render(m4Projection, m4View, ToMatrix4(m_m4Model));
+
+	//SLERP
+	static uint uClock = m_pSystem->GenClock();
+	float fTimer = m_pSystem->GetTimeSinceStart(uClock);
+	float fDeltaTime = m_pSystem->GetDeltaTime(uClock);
+
+	quaternion q1;
+	quaternion q2 = glm::angleAxis(100.0f, vector3(0.0f, 0.0f, 1.0f));
+	
+	float fPercentage = MapValue(fTimer, 0.0f, 5.0f, 0.0f, 1.0f);
+
+	quaternion qSLERP = glm::mix(q1, q2, fPercentage);
+
 
 	//m_qOrientation = m_qOrientation * glm::angleAxis(glm::radians(1.0f), vector3(1.0f));
-	//m_pMesh->Render(m4Projection, m4View, ToMatrix4(m_qOrientation));
+	m_pMesh->Render(m4Projection, m4View, ToMatrix4(m_qOrientation));
 	
 	// draw a skybox
 	m_pMeshMngr->AddSkyboxToRenderList();

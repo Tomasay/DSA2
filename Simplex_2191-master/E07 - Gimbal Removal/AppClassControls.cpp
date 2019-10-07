@@ -417,23 +417,44 @@ void Application::ProcessKeyboard(void)
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::X))
 	{
 		if (fMultiplier)
+		{
 			m_v3Rotation.x -= 1.0f;
+		}
 		else
+		{
 			m_v3Rotation.x += 1.0f;
+			quaternion q1 = glm::angleAxis(1.0f, vector3(1.0f, 0.0f, 0.0f));
+			vector3 v3Temp(glm::radians(m_v3Rotation.x), glm::radians(m_v3Rotation.y), glm::radians(m_v3Rotation.z));
+			m_qOrientation = quaternion(vector3(v3Temp));
+		}
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Y))
 	{
 		if (fMultiplier)
+		{
 			m_v3Rotation.y -= 1.0f;
+		}
 		else
+		{
 			m_v3Rotation.y += 1.0f;
+			quaternion q1 = glm::angleAxis(1.0f, vector3(0.0f, 1.0f, 0.0f));
+			vector3 v3Temp(glm::radians(m_v3Rotation.x), glm::radians(m_v3Rotation.y), glm::radians(m_v3Rotation.z));
+			m_qOrientation = quaternion(vector3(v3Temp));
+		}
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::Z))
 	{
 		if (fMultiplier)
+		{
 			m_v3Rotation.z -= 1.0f;
+		}
 		else
+		{
 			m_v3Rotation.z += 1.0f;
+			quaternion q1 = glm::angleAxis(1.0f, vector3(0.0f, 0.0f, 1.0f));
+			vector3 v3Temp(glm::radians(m_v3Rotation.x), glm::radians(m_v3Rotation.y), glm::radians(m_v3Rotation.z));
+			m_qOrientation = quaternion(vector3(v3Temp));
+		}
 	}
 	if (sf::Keyboard::isKeyPressed(sf::Keyboard::R))
 	{
