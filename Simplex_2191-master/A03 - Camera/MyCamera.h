@@ -230,6 +230,9 @@ public:
 	OUTPUT: ---
 	*/
 	void MoveSideways(float a_fDistance = 0.1f);
+
+	void ChangePitch(float fAngleX);
+	void ChangeYaw(float fAngleY);
 };
 
 } //namespace Simplex

@@ -169,11 +169,35 @@ void MyCamera::MoveVertical(float a_fDistance)
 
 void MyCamera::MoveSideways(float a_fDistance)
 {
-	vector3 move = m_v3Target - m_v3Position;
-	vector3 sideways = vector3(move.z, 0, move.x);
+	vector3 forward = glm::normalize(m_v3Position - m_v3Target);
+	vector3 right = glm::normalize(glm::cross(vector3(0.0f, 1.0f, 0.0f), forward));
 
 	//The following is just an example and does not take in account the forward vector (AKA view vector)
-	m_v3Position += sideways * a_fDistance;
-	m_v3Target += sideways * a_fDistance;
-	m_v3Above += sideways * a_fDistance;
+	m_v3Position += right * a_fDistance;
+	m_v3Target += right * a_fDistance;
+	m_v3Above += right * a_fDistance;
+}
+
+void MyCamera::ChangePitch(float fAngleX)
+{
+	vector3 forward = glm::normalize(m_v3Position - m_v3Target);
+	vector3 right = glm::normalize(glm::cross(vector3(0.0f, 1.0f, 0.0f), forward));
+
+	quaternion rotateX = glm::angleAxis(-fAngleX, right);
+
+	forward = rotateX * forward * glm::conjugate(rotateX);
+
+	SetTarget(m_v3Position + forward);
+}
+
+void MyCamera::ChangeYaw(float fAngleY)
+{
+	vector3 forward = glm::normalize(m_v3Position - m_v3Target);
+	vector3 right = glm::normalize(glm::cross(vector3(0.0f, 1.0f, 0.0f), forward));
+
+	quaternion rotateY = glm::angleAxis(fAngleY, vector3(0.0f, 1.0f, 0.0f));
+
+	forward = rotateY * forward * glm::conjugate(rotateY);
+
+	SetTarget(m_v3Position + forward);
 }
