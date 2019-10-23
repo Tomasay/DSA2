@@ -229,12 +229,19 @@ bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 	//check if spheres are colliding as pre-test
 	bool bColliding = (glm::distance(GetCenterGlobal(), a_pOther->GetCenterGlobal()) < m_fRadius + a_pOther->m_fRadius);
 	
+	glm::vec3 midpoint = abs(a_pOther->GetCenterGlobal() - GetCenterGlobal()) / 2;
+
 	//if they are colliding check the SAT
 	if (bColliding)
 	{
-		if(SAT(a_pOther) != eSATResults::SAT_NONE)
+		if (SAT(a_pOther) != eSATResults::SAT_NONE)
+		{
 			bColliding = false;// reset to false
+		}
+
 	}
+
+	//m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, midpoint) * glm::scale(glm::vec3(5, 5, 5)), C_RED);
 
 	if (bColliding) //they are colliding
 	{
@@ -272,10 +279,14 @@ void MyRigidBody::AddToRenderList(void)
 		else
 			m_pMeshMngr->AddWireCubeToRenderList(glm::translate(GetCenterGlobal()) * glm::scale(m_v3ARBBSize), C_YELLOW);
 	}
+
+	
+
 }
 
 uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 {
+	//The local axes for each object
 	std::vector<vector3> axesA;
 	std::vector<vector3> axesB;
 
@@ -287,129 +298,101 @@ uint MyRigidBody::SAT(MyRigidBody* const a_pOther)
 	axesB.push_back(a_pOther->m_m4ToWorld * vector4(glm::vec3(0, 1, 0), 0));
 	axesB.push_back(a_pOther->m_m4ToWorld * vector4(glm::vec3(0, 0, 1), 0));
 
-
-
+	//The half width of each object
 	vector3 halfWidthA = GetHalfWidth();
 	vector3 halfWidthB = a_pOther->GetHalfWidth();
 
-	struct OBB {
-		glm::vec3 c; // OBB center point
-		glm::vec3 u[3]; // Local x-, y-, and z-axes
-		glm::vec3 e; // Positive halfwidth extents of OBB along each axis
-	};
-
-	//creates two objects for the two characters in the scene
-	OBB a;
-	OBB b;
-
-	//gets first characters attributes
-	a.c = this->GetCenterGlobal();
-	a.u[0] = m_m4ToWorld * vector4(glm::vec3(1, 0, 0), 0);
-	a.u[1] = m_m4ToWorld * vector4(glm::vec3(0, 1, 0), 0);
-	a.u[2] = m_m4ToWorld * vector4(glm::vec3(0, 0, 1), 0);
-	halfWidthA = this->GetHalfWidth();
-
-	//gets second characters attributes
-	b.c = a_pOther->GetCenterGlobal();
-	b.u[0] = a_pOther->m_m4ToWorld * vector4(glm::vec3(1, 0, 0), 0);
-	b.u[1] = a_pOther->m_m4ToWorld * vector4(glm::vec3(0, 1, 0), 0);
-	b.u[2] = a_pOther->m_m4ToWorld * vector4(glm::vec3(0, 0, 1), 0);
-	halfWidthB = a_pOther->GetHalfWidth();
-
-
+	//Radii
 	float ra, rb;
 
-	//r is the rotation the brings B into A's coordinate frame
-	glm::mat3 R, AbsR;
+	//Rotation matrix that brings B into A's coordinate frame
+	glm::mat3 R;
 
-	//computes rotatoial matrix, brings b coordinates into a's frame
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			R[i][j] = glm::dot(a.u[i], b.u[j]);
+			R[i][j] = glm::dot(axesA[i], axesB[j]);
 
 
-	//gets vector between the two objects
-	glm::vec3 t = b.c - a.c;
+	//Compute translation vector t
+	glm::vec3 t = a_pOther->GetCenterGlobal() - GetCenterGlobal();
 
-	// Changed 2 to a 1, book error, gets
-	t = glm::vec3(glm::dot(t, a.u[0]), glm::dot(t, a.u[1]), glm::dot(t, a.u[2]));
+	//Bring translation into a's coordinate frame
+	t = glm::vec3(glm::dot(t, axesA[0]), glm::dot(t, axesA[1]), glm::dot(t, axesA[2]));
 
-	//counteracts arithmetic errors when two edges are parallel
+	//Counteract arithmetic errors when two edges are parallel
 	for (int i = 0; i < 3; i++)
 		for (int j = 0; j < 3; j++)
-			AbsR[i][j] = abs(R[i][j]) + DBL_EPSILON;
+			R[i][j] = abs(R[i][j]) + DBL_EPSILON;
 
 	// Test axes L = A0, L = A1, L = A2
 	for (int i = 0; i < 3; i++) {
 		ra = halfWidthA[i];
-		rb = halfWidthB[0] * AbsR[i][0] + halfWidthB[1] * AbsR[i][1] + halfWidthB[2] * AbsR[i][2];
-		//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-		if (abs(t[i]) > ra + rb) return 1;
+		rb = halfWidthB[0] * R[i][0] + halfWidthB[1] * R[i][1] + halfWidthB[2] * R[i][2];
+		if (abs(t[i]) > ra + rb)
+			return 1;
 	}
 
-	// Test axes L = B0, L = B1, L = B2
+	//B0, B1, B2
 	for (int i = 0; i < 3; i++) {
-		ra = halfWidthA[0] * AbsR[0][i] + halfWidthA[1] * AbsR[1][i] + halfWidthA[2] * AbsR[2][i];
+		ra = halfWidthA[0] * R[0][i] + halfWidthA[1] * R[1][i] + halfWidthA[2] * R[2][i];
 		rb = halfWidthB[i];
-		//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-		if (abs(t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i]) > ra + rb) return 1;
+		if (abs(t[0] * R[0][i] + t[1] * R[1][i] + t[2] * R[2][i]) > ra + rb)
+			return 1;
 	}
 
-	//returns the x plane for both object
-	ra = halfWidthA[1] * AbsR[2][0] + halfWidthA[2] * AbsR[1][0];
-	rb = halfWidthB[1] * AbsR[0][2] + halfWidthB[2] * AbsR[0][1];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[2] * R[1][0] - t[1] * R[2][0]) > ra + rb) return eSATResults::SAT_AXxBX;
+	//A0 x B0
+	ra = halfWidthA[1] * R[2][0] + halfWidthA[2] * R[1][0];
+	rb = halfWidthB[1] * R[0][2] + halfWidthB[2] * R[0][1];
+	if (abs(t[2] * R[1][0] - t[1] * R[2][0]) > ra + rb)
+		return eSATResults::SAT_AXxBX;
 
-	//returns object a's X and object b's Y
-	ra = halfWidthA[1] * AbsR[2][1] + halfWidthA[2] * AbsR[1][1];
-	rb = halfWidthB[0] * AbsR[0][2] + halfWidthB[2] * AbsR[0][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[2] * R[1][1] - t[1] * R[2][1]) > ra + rb) return eSATResults::SAT_AXxBY;
+	//A0 x B1
+	ra = halfWidthA[1] * R[2][1] + halfWidthA[2] * R[1][1];
+	rb = halfWidthB[0] * R[0][2] + halfWidthB[2] * R[0][0];
+	if (abs(t[2] * R[1][1] - t[1] * R[2][1]) > ra + rb)
+		return eSATResults::SAT_AXxBY;
 
-	//returns object a's X and object b's Z
-	ra = halfWidthA[1] * AbsR[2][2] + halfWidthA[2] * AbsR[1][2];
-	rb = halfWidthB[0] * AbsR[0][1] + halfWidthB[1] * AbsR[0][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[2] * R[1][2] - t[1] * R[2][2]) > ra + rb) return eSATResults::SAT_AXxBZ;
+	//A0 x B2
+	ra = halfWidthA[1] * R[2][2] + halfWidthA[2] * R[1][2];
+	rb = halfWidthB[0] * R[0][1] + halfWidthB[1] * R[0][0];
+	if (abs(t[2] * R[1][2] - t[1] * R[2][2]) > ra + rb)
+		return eSATResults::SAT_AXxBZ;
 
-	//returns object a's Y and object b's X
-	ra = halfWidthA[0] * AbsR[2][0] + halfWidthA[2] * AbsR[0][0];
-	rb = halfWidthB[1] * AbsR[1][2] + halfWidthB[2] * AbsR[1][1];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[0] * R[2][0] - t[2] * R[0][0]) > ra + rb) return eSATResults::SAT_AYxBX;
+	//A1 x B0
+	ra = halfWidthA[0] * R[2][0] + halfWidthA[2] * R[0][0];
+	rb = halfWidthB[1] * R[1][2] + halfWidthB[2] * R[1][1];
+	if (abs(t[0] * R[2][0] - t[2] * R[0][0]) > ra + rb)
+		return eSATResults::SAT_AYxBX;
 
-	//returns object a's Y and object b's X
-	ra = halfWidthA[0] * AbsR[2][1] + halfWidthA[2] * AbsR[0][1];
-	rb = halfWidthB[0] * AbsR[1][2] + halfWidthB[2] * AbsR[1][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[0] * R[2][1] - t[2] * R[0][1]) > ra + rb) return eSATResults::SAT_AYxBY;
+	//A1 x B1
+	ra = halfWidthA[0] * R[2][1] + halfWidthA[2] * R[0][1];
+	rb = halfWidthB[0] * R[1][2] + halfWidthB[2] * R[1][0];
+	if (abs(t[0] * R[2][1] - t[2] * R[0][1]) > ra + rb)
+		return eSATResults::SAT_AYxBY;
 
-	//returns object a's Y and object b's Z
+	//A1 x B2
+	ra = halfWidthA[0] * R[2][2] + halfWidthA[2] * R[0][2];
+	rb = halfWidthB[0] * R[1][1] + halfWidthB[1] * R[1][0];
+	if (abs(t[0] * R[2][2] - t[2] * R[0][2]) > ra + rb)
+		return eSATResults::SAT_AYxBZ;
 
-	ra = halfWidthA[0] * AbsR[2][2] + halfWidthA[2] * AbsR[0][2];
-	rb = halfWidthB[0] * AbsR[1][1] + halfWidthB[1] * AbsR[1][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[0] * R[2][2] - t[2] * R[0][2]) > ra + rb) return eSATResults::SAT_AYxBZ;
+	//A2 x B0
+	ra = halfWidthA[0] * R[1][0] + halfWidthA[1] * R[0][0];
+	rb = halfWidthB[1] * R[2][2] + halfWidthB[2] * R[2][1];
+	if (abs(t[1] * R[0][0] - t[0] * R[1][0]) > ra + rb)
+		return eSATResults::SAT_AZxBX;
 
-	//returns object a's Z and object b's X
-	ra = halfWidthA[0] * AbsR[1][0] + halfWidthA[1] * AbsR[0][0];
-	rb = halfWidthB[1] * AbsR[2][2] + halfWidthB[2] * AbsR[2][1];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[1] * R[0][0] - t[0] * R[1][0]) > ra + rb) return eSATResults::SAT_AZxBX;
+	//A2 x B1
+	ra = halfWidthA[0] * R[1][1] + halfWidthA[1] * R[0][1];
+	rb = halfWidthB[0] * R[2][2] + halfWidthB[2] * R[2][0];
+	if (abs(t[1] * R[0][1] - t[0] * R[1][1]) > ra + rb)
+		return eSATResults::SAT_AZxBY;
 
-	//returns object a's Z and object b's Y
-	ra = halfWidthA[0] * AbsR[1][1] + halfWidthA[1] * AbsR[0][1];
-	rb = halfWidthB[0] * AbsR[2][2] + halfWidthB[2] * AbsR[2][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-
-	if (abs(t[1] * R[0][1] - t[0] * R[1][1]) > ra + rb) return eSATResults::SAT_AZxBY;
-
-	//returns object a's Z and object b's Z
-	ra = halfWidthA[0] * AbsR[1][2] + halfWidthA[1] * AbsR[0][2];
-	rb = halfWidthB[0] * AbsR[2][1] + halfWidthB[1] * AbsR[2][0];
-	//the distance between the two objects * the radii of the two objects is greater that the distance between the sum of the two radius's
-	if (abs(t[1] * R[0][2] - t[0] * R[1][2]) > ra + rb) return eSATResults::SAT_AZxBZ;
+	//A2 x B2
+	ra = halfWidthA[0] * R[1][2] + halfWidthA[1] * R[0][2];
+	rb = halfWidthB[0] * R[2][1] + halfWidthB[1] * R[2][0];
+	if (abs(t[1] * R[0][2] - t[0] * R[1][2]) > ra + rb)
+		return eSATResults::SAT_AZxBZ;
 
 	//there is no axis test that separates this two objects
 	return eSATResults::SAT_NONE;
