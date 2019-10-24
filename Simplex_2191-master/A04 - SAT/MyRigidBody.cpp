@@ -227,21 +227,42 @@ void MyRigidBody::ClearCollidingList(void)
 bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 {
 	//check if spheres are colliding as pre-test
-	bool bColliding = (glm::distance(GetCenterGlobal(), a_pOther->GetCenterGlobal()) < m_fRadius + a_pOther->m_fRadius);
-	
-	glm::vec3 midpoint = abs(a_pOther->GetCenterGlobal() - GetCenterGlobal()) / 2;
+	bool bColliding = true;
+
+	//Paramaters for planes
+	glm::vec3 position = ((a_pOther->GetCenterGlobal() - GetCenterGlobal()) / 2);
+	glm::vec3 color;
+	glm::vec3 orientation;
 
 	//if they are colliding check the SAT
 	if (bColliding)
 	{
-		if (SAT(a_pOther) != eSATResults::SAT_NONE)
-		{
+		int result = SAT(a_pOther);
+
+		if (result != eSATResults::SAT_NONE) {
 			bColliding = false;// reset to false
+
+			//Determine axis and color
+			//X
+			if (result % 3 == 0)
+			{
+				color = C_BLUE;
+				orientation = vector3(0, 0, 1);
+			}
+			//Y
+			else if (result % 3 == 1)
+			{
+				color = C_RED;
+				orientation = vector3(0, 1, 0);
+			}
+			//Z
+			else
+			{
+				color = C_GREEN;
+				orientation = vector3(1, 0, 0);
+			}
 		}
-
 	}
-
-	//m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, midpoint) * glm::scale(glm::vec3(5, 5, 5)), C_RED);
 
 	if (bColliding) //they are colliding
 	{
@@ -252,6 +273,10 @@ bool MyRigidBody::IsColliding(MyRigidBody* const a_pOther)
 	{
 		this->RemoveCollisionWith(a_pOther);
 		a_pOther->RemoveCollisionWith(this);
+
+		//Render plane on both directions
+		m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, position) * glm::scale(glm::vec3(5, 5, 5)) * glm::rotate((float)PI / 2, orientation), color);
+		m_pMeshMngr->AddPlaneToRenderList(glm::translate(m_m4ToWorld, position) * glm::scale(glm::vec3(5, 5, 5)) * glm::rotate(3 * (float)PI / 2, orientation), color);
 	}
 
 	return bColliding;
