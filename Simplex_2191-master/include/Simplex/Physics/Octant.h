@@ -11,7 +11,7 @@ namespace Simplex
 {
 
 //System Class
-class SimplexDLL Octant
+class Octant
 {
 	static uint m_uOctantCount; //will store the number of octants instantiated
 	static uint m_uMaxLevel;//will store the maximum level an octant can go to

@@ -1,5 +1,9 @@
-#include "MyOctant.h"
+#include "Simplex/Physics/Octant.h"
 using namespace Simplex;
+
+uint Octant::m_uOctantCount = 0;
+uint Octant::m_uMaxLevel = 4;
+uint Octant::m_uIdealEntityCount = 5;
 
 
 //All the different constructors
@@ -20,13 +24,13 @@ Simplex::Octant::Octant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 	uint objectN = m_pEntityMngr->GetEntityCount();
 	for (uint i = 0; i < objectN; i++)
 	{
-		MyEntity* entityP = m_pEntityMngr->GetEntity(i);
-		MyRigidBody* rigidBodyP = entityP->GetRigidBody();
+		Entity* entityP = m_pEntityMngr->GetEntity(i);
+		RigidBody* rigidBodyP = entityP->GetRigidBody();
 		minMaxV3.push_back(rigidBodyP->GetMinGlobal());
 		minMaxV3.push_back(rigidBodyP->GetMaxGlobal());
 	}
 
-	MyRigidBody* rigidBodyP = new MyRigidBody(minMaxV3);
+	RigidBody* rigidBodyP = new RigidBody(minMaxV3);
 
 	vector3 halfWidthV3 = rigidBodyP->GetHalfWidth();
 	float maxF = halfWidthV3.x;
@@ -79,7 +83,7 @@ Simplex::Octant::Octant(Octant const& other)
 	m_lChild = other.m_lChild;
 
 	m_pMeshMngr = MeshManager::GetInstance();
-	m_pEntityMngr = MyEntityManager::GetInstance();
+	m_pEntityMngr = EntityManager::GetInstance();
 
 	for (uint i = 0; i < 8; i++)
 	{
@@ -160,7 +164,7 @@ void Simplex::Octant::Swap(Octant& other)
 	std::swap(m_v3Max, other.m_v3Max);
 
 	m_pMeshMngr = MeshManager::GetInstance();
-	m_pEntityMngr = MyEntityManager::GetInstance();
+	m_pEntityMngr = EntityManager::GetInstance();
 
 	std::swap(m_uLevel, other.m_uLevel);
 	std::swap(m_pParent, other.m_pParent);
@@ -180,8 +184,8 @@ bool Simplex::Octant::IsColliding(uint a_uRBIndex)
 
 	//Use AABB to check for collisions since the Octree doesn't rotate
 	//All global space vectors
-	MyEntity* entityPtr = m_pEntityMngr->GetEntity(a_uRBIndex);
-	MyRigidBody* rigidBodyPtr = entityPtr->GetRigidBody();
+	Entity* entityPtr = m_pEntityMngr->GetEntity(a_uRBIndex);
+	RigidBody* rigidBodyPtr = entityPtr->GetRigidBody();
 	vector3 v3Min = rigidBodyPtr->GetMinGlobal();
 	vector3 v3Max = rigidBodyPtr->GetMaxGlobal();
 
@@ -438,7 +442,7 @@ void Simplex::Octant::Init(void)
 	m_v3Max = vector3(0.0f);
 
 	m_pMeshMngr = MeshManager::GetInstance();
-	m_pEntityMngr = MyEntityManager::GetInstance();
+	m_pEntityMngr = EntityManager::GetInstance();
 
 	m_pRoot = nullptr;
 	m_pParent = nullptr;
