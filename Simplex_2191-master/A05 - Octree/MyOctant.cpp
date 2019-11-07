@@ -4,8 +4,33 @@ uint MyOctant::m_uOctantCount = 0;
 uint MyOctant::m_uMaxLevel = 4;
 uint MyOctant::m_uIdealEntityCount = 5;
 
+//Initializes variables
+void MyOctant::MyOctant::Init(void)
+{
+	m_uChildren = 0;
 
-//All the different constructors
+	m_fSize = 0.0f;
+
+	m_uID = m_uOctantCount;
+	m_uLevel = 0;
+
+	m_v3Center = vector3(0.0f);
+	m_v3Min = vector3(0.0f);
+	m_v3Max = vector3(0.0f);
+
+	m_pMeshMngr = MeshManager::GetInstance();
+	m_pEntityMngr = MyEntityManager::GetInstance();
+
+	m_pRoot = nullptr;
+	m_pParent = nullptr;
+
+	for (uint i = 0; i < 8; i++)
+	{
+		m_pChild[i] = nullptr;
+	}
+}
+
+//Default constructor
 MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 {
 	Init();
@@ -53,6 +78,7 @@ MyOctant::MyOctant(uint a_nMaxLevel, uint a_nIdealEntityCount)
 	ConstructTree(m_uMaxLevel);
 }
 
+//Paramaterized constructor
 MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
 {
 	Init();
@@ -65,6 +91,7 @@ MyOctant::MyOctant(vector3 a_v3Center, float a_fSize)
 	m_uOctantCount++;
 }
 
+//Copy constructor
 MyOctant::MyOctant(MyOctant const& other)
 {
 	m_uChildren = other.m_uChildren;
@@ -89,6 +116,7 @@ MyOctant::MyOctant(MyOctant const& other)
 	}
 }
 
+//Copy assignment operator
 MyOctant& MyOctant::MyOctant::operator=(MyOctant const& other)
 {
 	if (this != &other)
@@ -101,12 +129,11 @@ MyOctant& MyOctant::MyOctant::operator=(MyOctant const& other)
 	return *this;
 }
 
+//Destructor
 MyOctant::MyOctant::~MyOctant(void)
 {
 	Release();
 }
-
-
 
 //Accessors
 float MyOctant::MyOctant::GetSize(void)
@@ -180,30 +207,22 @@ bool MyOctant::MyOctant::IsColliding(uint a_uRBIndex)
 	if (a_uRBIndex >= ObjCount)
 		return false;
 
-	//Use AABB to check for collisions since the Octree doesn't rotate
-	//All global space vectors
+	//AABB
 	MyEntity* entityPtr = m_pEntityMngr->GetEntity(a_uRBIndex);
 	MyRigidBody* rigidBodyPtr = entityPtr->GetRigidBody();
 	vector3 v3Min = rigidBodyPtr->GetMinGlobal();
 	vector3 v3Max = rigidBodyPtr->GetMaxGlobal();
 
-	//Check for x
-	if (m_v3Max.x < v3Min.x)
-		return false;
-	if (m_v3Min.x > v3Max.x)
+	//X
+	if (m_v3Max.x < v3Min.x || m_v3Min.x > v3Max.x)
 		return false;
 
-	//Check for y
-	if (m_v3Max.y < v3Min.y)
-		return false;
-	if (m_v3Min.y > v3Max.y)
+	//Y
+	if (m_v3Max.y < v3Min.y || m_v3Min.y > v3Max.y)
 		return false;
 
-	//Check for z
-	if (m_v3Max.z < v3Min.z)
-		return false;
-	if (m_v3Min.z > v3Max.z)
-		return false;
+	//Z
+	if (m_v3Max.z < v3Min.z || m_v3Min.z > v3Max.z)
 
 	return true;
 }
@@ -262,7 +281,6 @@ void MyOctant::MyOctant::Subdivide(void)
 	if (m_uChildren != 0)
 		return;
 
-	//Since this will have children, it is not a leaf
 	m_uChildren = 8;
 
 	float fSize = m_fSize / 4.0f;
@@ -313,7 +331,6 @@ void MyOctant::MyOctant::Subdivide(void)
 			m_pChild[i]->Subdivide();
 		}
 	}
-
 }
 
 bool MyOctant::MyOctant::IsLeaf(void)
@@ -337,8 +354,6 @@ bool MyOctant::MyOctant::ContainsMoreThan(uint a_nEntities)
 
 void MyOctant::MyOctant::KillBranches(void)
 {
-	/*Goes through the whole tree until it finds a node with no children and once it gets back to its parent, it will kill all of the children recursivley
-	until returned back to the node it was called by*/
 	for (uint i = 0; i < m_uChildren; i++)
 	{
 		m_pChild[i]->KillBranches();
@@ -379,12 +394,12 @@ void MyOctant::MyOctant::ConstructTree(uint a_nMaxLevel)
 
 void MyOctant::MyOctant::AssignIDtoEntity(void)
 {
-	//Traverse until at a leaf
 	for (uint child = 0; child < m_uChildren; child++)
 	{
 		m_pChild[child]->AssignIDtoEntity();
 	}
-	if (m_uChildren == 0) //If a leaf
+
+	if (m_uChildren == 0)
 	{
 		uint entities = m_pEntityMngr->GetEntityCount();
 		for (uint index = 0; index < entities; index++)
@@ -411,42 +426,15 @@ void MyOctant::MyOctant::ConstructList(void)
 	}
 }
 
-
-
 void MyOctant::MyOctant::Release(void)
 {
-	//Only occurs if you are only releasing the root
 	if (m_uLevel == 0)
 	{
 		KillBranches();
 	}
+
 	m_uChildren = 0;
 	m_fSize = 0.0f;
 	m_EntityList.clear();
 	m_lChild.clear();
-}
-
-void MyOctant::MyOctant::Init(void)
-{
-	m_uChildren = 0;
-
-	m_fSize = 0.0f;
-
-	m_uID = m_uOctantCount;
-	m_uLevel = 0;
-
-	m_v3Center = vector3(0.0f);
-	m_v3Min = vector3(0.0f);
-	m_v3Max = vector3(0.0f);
-
-	m_pMeshMngr = MeshManager::GetInstance();
-	m_pEntityMngr = MyEntityManager::GetInstance();
-
-	m_pRoot = nullptr;
-	m_pParent = nullptr;
-
-	for (uint i = 0; i < 8; i++)
-	{
-		m_pChild[i] = nullptr;
-	}
 }
